@@ -1,0 +1,27 @@
+body {
+    padding: 1em;
+}
+
+input {
+    margin-bottom: 10px;
+}
+
+button {
+    display: block;
+    margin-bottom: 10px;
+}
+
+table {
+    border: 1px solid black;
+}
+
+td {
+    width: 20px;
+    height: 20px;
+    border: 1px solid black;
+    color: black;
+    font-weight: bolder;
+    text-align: center;
+    font-size: 14px;
+    line-height: 20px;
+}
