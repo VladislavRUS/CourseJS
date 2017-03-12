@@ -1,14 +1,14 @@
 var worker = new Worker('worker.js');
 var start, end;
 
-var N = 10;
-
-var globalMatrix = createMatrix(N);
+var globalMatrix = createMatrix();
 var clusteredMatrix;
 
 initGlobalMatrix();
 
-function createMatrix(N) {
+function createMatrix() {
+    var N = parseInt(getElm('N').value);
+
     var matrix = [];
     for (var i = 0; i < N; i++) {
         matrix[i] = new Array(N);
@@ -18,10 +18,12 @@ function createMatrix(N) {
 }
 
 function initGlobalMatrix() {
+    globalMatrix = createMatrix();
+
     var p = 1 - parseFloat(getElm('p').value);
 
-    for (var i = 0; i < N; i++) {
-        for (var j = 0; j < N; j++) {
+    for (var i = 0; i < globalMatrix.length; i++) {
+        for (var j = 0; j < globalMatrix.length; j++) {
             globalMatrix[i][j] = {
                 color: Math.random() > p ? 'black' : 'white',
                 id: i + ':' + j,
@@ -38,10 +40,10 @@ function drawTable(matrix, field) {
     var table = getElm('table');
     table.innerHTML = '';
 
-    for (var i = 0; i < N; i++) {
+    for (var i = 0; i < matrix.length; i++) {
         var tr = document.createElement('tr');
 
-        for (var j = 0; j < N; j++) {
+        for (var j = 0; j < matrix.length; j++) {
             var td = document.createElement('td');
             td.innerHTML =
                 matrix[i][j][field] !== undefined
@@ -91,14 +93,34 @@ worker.addEventListener('message', function (event) {
             onPrepareMatrix(event.data.arr);
             break;
         }
+
+        case 'graph': {
+            onGraph(event.data.arr);
+            break;
+        }
+
+        case 'info': {
+            onInfo(event.data.info);
+            break;
+        }
     }
 });
+
+function onInfo(info) {
+    getElm('info').innerHTML = 'Длина: ' + info.length + '. Кол-во добавленных: ' + info.whiteCells;
+}
 
 function onPrepareMatrix(arr) {
     for (var i = 0; i < arr.length; i++) {
         var elm = arr[i];
         var td = getElm(elm.i + ':' + elm.j);
-        td.style.border = '3px solid red';
+
+        if (arr[i].color == 'white') {
+            td.style.backgroundColor = 'orange';
+            td.style.border = '3px solid red';
+        } else {
+            td.style.backgroundColor = 'red';
+        }
     }
 }
 
@@ -112,4 +134,11 @@ function onFindClusters(matrix) {
 
 function onFindPath(matrix) {
     drawTable(matrix, 'wavePhase');
+}
+
+function onGraph(arr) {
+    arr.forEach(function(el) {
+        var td = getElm(el.i + ':' + el.j);
+        td.style.border = '5px solid red';
+    })
 }

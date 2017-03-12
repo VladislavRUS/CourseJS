@@ -7,12 +7,16 @@
 </head>
 <body>
 
-<input id="p" type="number" step="0.1" min="0.1" max="0.9" placeholder="P" value="0.5">
+<input id="N" type="number" step="1" min="1" max="200" placeholder="N" value="30">
+
+<input id="p" type="number" step="0.05" min="0.05" max="0.95" placeholder="P" value="0.5">
 <button onclick="initGlobalMatrix()">Создать таблицу</button>
 
 
 <button onclick="findClusters()">Найти кластеры</button>
 <button onclick="findPath()">Найти путь</button>
+
+<div id="info"></div>
 
 <table id="table"></table>
 <script src="script.js"></script>
