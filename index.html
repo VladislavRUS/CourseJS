@@ -4,21 +4,46 @@
 	<title>Course work</title>
 	<link rel="stylesheet" type="text/css" href="reset.css">
 	<link rel="stylesheet" type="text/css" href="style.css">
+	<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
 
 <input id="N" type="number" step="1" min="1" max="200" placeholder="N" value="30">
 
 <input id="p" type="number" step="0.05" min="0.05" max="0.95" placeholder="P" value="0.5">
+
+<input id="maxP" type="number" step="0.05" min="0.05" max="0.95" placeholder="max P" value="0.5">
+
+<input id="iterations" type="number" step="1" min="1" max="500" placholder="Iterations" value="1">
+
 <button onclick="initGlobalMatrix()">Создать таблицу</button>
 
+<button onclick="initGlobalMatrixGradient()">Создать таблицу (градиент)</button>
+
+<button onclick="iterations()">Провести итеративно</button>
+
+<div class="buttons">
 
 <button onclick="findClusters()">Найти кластеры</button>
+<button onclick="makeRings()">Тестовый (кольца)</button>
+<button onclick="makeChess()">Тестовый (шахматка)</button>
+<button onclick="makeHorizontal()">Тестовый (горизонтально)</button>
+<button onclick="makeVertical()">Тестовый (вертикально)</button>
+<button onclick="makeRain()">Тестовый (дождь)</button>
+</div>
+
 <button onclick="findPath()">Найти путь</button>
 
 <div id="info"></div>
 
 <table id="table"></table>
+
+<div id="results"></div>
+
+<div id="plot"></div>
+<div id="length"></div>
+
 <script src="script.js"></script>
+
 </body>
 </html>

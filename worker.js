@@ -14,6 +14,19 @@ onmessage = function (event) {
 
             break;
         }
+
+        case 'iterations': {
+            var matrixWithClusters = findClusters(event.data.matrix);
+            var result = findPath(matrixWithClusters);
+            postMessage({
+                action: 'iterations',
+                arr: result.arr,
+                statistics: result.statistics,
+                p: event.data.p,
+                matrix: matrixWithClusters,
+                i: event.data.i
+            });
+        }
     }
 };
 
@@ -81,11 +94,18 @@ function mergeClusters(less, more, watched) {
 function findPath(matrix) {
     var wavedUp = waveUp(matrix);
 
+    //postMessage({action: 'minPhased', matrix: matrix});
+
     var possibleWays = [];
 
     wavedUp.minPhasedElements.forEach(function (elm) {
         var arr = prepareMatrix(wavedUp.matrix, elm);
+
+        //postMessage({action: 'prepareMatrix', arr: arr});
+
         var path = waveDown(arr, matrix);
+
+        //postMessage({action: 'path', path: path});
 
         possibleWays.push(path);
     });
@@ -369,7 +389,7 @@ function rowWaved(side, matrix) {
     var i = side == 'top' ? 0 : matrix.length - 1;
 
     for (var j = 0; j < matrix.length; j++) {
-        if (matrix[i][j].wavePhase) {
+        if (matrix[i][j].hasOwnProperty('wavePhase')) {
             return true;
         }
     }
