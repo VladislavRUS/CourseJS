@@ -60,21 +60,33 @@ function createRandomMatrix(p) {
 
 function findNew() {
 
-    var matrix = createRandomMatrix(1 - parseFloat(getElm('p').value));
+    var matrix = util.copy(globalMatrix);
+
+    var start = new Date().getTime();
 
     var clustered = finder.findClusters(matrix);
-    var wavedUp = wave.waveUp(clustered);
+    var wavedUp = wave.waveUp(clustered, forbidden);
     var prepared = wave.prepare(wavedUp);
-    var wavedDown = wave.waveDown(wavedUp, prepared);
+    var wavedDown = wave.waveDown(wavedUp, prepared, forbidden);
+    var path = wave.getPath(wavedDown);
 
-    drawTable(wavedDown, 'wavePhase');
+    var end = new Date().getTime();
+    console.log('Time: ' + (end - start));
 
-    prepared.forEach(function(p) {
-        getElm(p.i + ':' + p.j).style.border = '3px solid red';
+    drawTable(wavedDown);
+
+    paintMatrix('black');
+
+    path.forEach(function (p) {
+        var elm = getElm(p.i + ':' + p.j);
+
+        if (elm.style.backgroundColor !== 'white') {
+            elm.style.backgroundColor = 'orange';
+
+        } else {
+            elm.style.backgroundColor = 'red';
+        }
     });
-
-    //var wavedDown = wave.waveDown(prepared);
-
 
 }
 
@@ -204,6 +216,8 @@ function createCell(i, j, color) {
 }
 
 function drawTable(matrix, field) {
+    forbidden = [];
+
     var N = matrix.length;
     var size = 800;
 
@@ -220,6 +234,8 @@ function drawTable(matrix, field) {
             td.style.width = tdSize + 'px';
             td.style.height = tdSize + 'px';
 
+            td.onclick = tdClick;
+
             td.innerHTML =
                 matrix[i][j][field] !== undefined
                     ? matrix[i][j][field] + ''
@@ -232,6 +248,17 @@ function drawTable(matrix, field) {
 
         table.appendChild(tr);
     }
+}
+
+function tdClick() {
+    this.style.backgroundColor = 'green';
+    var obj = {};
+    var id = this.getAttribute('id');
+
+    obj.i = parseInt(id.split(':')[0]);
+    obj.j = parseInt(id.split(':')[1]);
+
+    forbidden.push(obj);
 }
 
 function getElm(id) {

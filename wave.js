@@ -1,201 +1,331 @@
 var wave = {
-	waveUp: function (matr) {
-		var self = this;
+    waveUp: function (matr, forbidden) {
+        var self = this;
 
-		var matrix = util.copy(matr);
+        var matrix = util.copy(matr);
 
-		var wavePhase = 0;
+        var wavePhase = 0;
 
-		var initialized = this.initRow('bottom', matrix);
+        self.initRow('bottom', matrix);
 
-		while (!this.rowWaved('top', matrix)) {
-			var iterationInitialized = [];
+        for (var i = 0; i < matrix.length; i++) {
+            for (var j = 0; j < matrix.length; j++) {
+                matrix[i][j].forbidden = false;
+            }
+        }
 
-			initialized.forEach(function (cell) {
-				var neighbours = util.getNeighbours(cell.i, cell.j, matrix);
+        forbidden.forEach(function(f) {
+            matrix[f.i][f.j].forbidden = true;
+        });
 
-				neighbours.forEach(function (n) {
-					if (!n.hasOwnProperty('wavePhase')) {
-						if (n.cluster !== -1) {
-							var clusterArr = self.getCluster(n.cluster, matrix);
+        while (!this.rowWaved('top', matrix)) {
+            wavePhase++;
 
-							clusterArr.forEach(function (n) {
-								n.wavePhase = wavePhase + 1;
-							});
-							iterationInitialized = iterationInitialized.concat(clusterArr);
+            for (var i = 0; i < matrix.length; i++) {
+                for (var j = 0; j < matrix.length; j++) {
+                    var cell = matrix[i][j];
 
-						} else {
-							n.wavePhase = wavePhase + 1;
-							iterationInitialized.push(n);
-						}
-					}
-				});
-			});
+                    if (cell.hasOwnProperty('wavePhase') && cell.wavePhase == wavePhase - 1 && !cell.forbidden) {
 
-			initialized = iterationInitialized;
+                        var neighbours = util.getNeighbours(i, j, matrix).filter(function(n) {
+                            return !n.forbidden;
+                        });
 
-			wavePhase++;
-		}
+                        neighbours.forEach(function (n) {
+                            if (!n.hasOwnProperty('wavePhase') || (n.wavePhase > wavePhase + 1)) {
+                                if (n.cluster !== -1) {
+                                    var cluster = self.getCluster(n.cluster, matrix);
 
-		return matrix;
-	},
+                                    cluster.filter(function(c) {
+                                        return !c.forbidden;
+                                    });
 
-	waveDown: function (wavedUpMatrix, prepared) {
-		var matrix = util.copy(wavedUpMatrix);
+                                    cluster.forEach(function (c) {
+                                        c.wavePhase = wavePhase;
+                                    });
 
-		prepared.forEach(function(p) {
-			matrix[p.i][p.j].allowed = true;
-		});
+                                } else {
+                                    n.wavePhase = wavePhase;
+                                }
+                            }
+                        })
+                    }
+                }
+            }
+        }
 
-		for (var i = 0; i < matrix.length; i++) {
-			for (var j = 0; j < matrix.length; j++) {
-				delete matrix[i][j].wavePhase;
-			}
-		}
+        return matrix;
+    },
 
-		var wavePhase = 0;
+    waveDown: function (wavedUpMatrix, prepared, forbidden) {
+        var matrix = util.copy(wavedUpMatrix);
 
-		var row = 0;
-		for (var j = 0; j < matrix.length; j++) {
-			matrix[row][j].wavePhase = wavePhase;
-		}
+        prepared.forEach(function (p) {
+            matrix[p.i][p.j].allowed = true;
+        });
 
-		while (!this.rowWaved('bottom', matrix)) {
-			for (var i = 0; i < matrix.length; i++) {
-				for (var j = 0; j < matrix.length; j++) {
-					if (matrix[i][j].wavePhase == wavePhase && matrix[i][j].allowed) {
-						var neighbours = util.getNeighbours(i, j, matrix).filter(function(n) {
-							return n.allowed == true;
-						});
+        for (var i = 0; i < matrix.length; i++) {
+            for (var j = 0; j < matrix.length; j++) {
+                delete matrix[i][j].wavePhase;
+            }
+        }
 
-						neighbours.forEach(function (n) {
-							if (!n.hasOwnProperty('wavePhase')) {
-								n.wavePhase = wavePhase + 1;
-							}
-						});
-					}
-				}
-			}
+        forbidden.forEach(function(f) {
+            matrix[f.i][f.j].allowed = false;
+        });
 
-			wavePhase++;
-		}
+        var wavePhase = 0;
 
-		return matrix;
-	},
+        var row = 0;
+        for (var j = 0; j < matrix.length; j++) {
+            matrix[row][j].wavePhase = wavePhase;
+        }
 
-	prepare: function (wavedUpMatrix) {
-		var self = this;
+        while (!this.rowWaved('bottom', matrix)) {
+            for (var i = 0; i < matrix.length; i++) {
+                for (var j = 0; j < matrix.length; j++) {
+                    var cell = matrix[i][j];
 
-		var matrix = util.copy(wavedUpMatrix);
-		var lastIteration = [];
+                    if (cell.wavePhase == wavePhase && cell.allowed) {
+                        var neighbours = util.getNeighbours(i, j, matrix).filter(function (n) {
+                            return n.allowed == true;
+                        });
 
-		var row = 0;
-		for (var j = 0; j < matrix.length; j++) {
-			if (matrix[row][j].hasOwnProperty('wavePhase')) {
-				lastIteration.push(matrix[row][j]);
-			}
-		}
+                        neighbours.forEach(function (n) {
+                            if (!n.hasOwnProperty('wavePhase') || (n.wavePhase > wavePhase + 1)) {
+                                n.wavePhase = wavePhase + 1;
+                            }
+                        });
+                    }
+                }
+            }
 
-		var phase = lastIteration[lastIteration.length - 1];
+            wavePhase++;
+        }
 
-		var result = [];
-		result = result.concat(lastIteration);
+        return matrix;
+    },
 
-		do {
+    prepare: function (wavedUpMatrix) {
+        var self = this;
 
-			var iteration = [];
+        var matrix = util.copy(wavedUpMatrix);
+        var lastIteration = [];
 
-			lastIteration.forEach(function (cell) {
-				var neighbours = util.getNeighbours(cell.i, cell.j, matrix);
+        var row = 0;
+        for (var j = 0; j < matrix.length; j++) {
+            if (matrix[row][j].hasOwnProperty('wavePhase')) {
+                lastIteration.push(matrix[row][j]);
+            }
+        }
 
-				neighbours.forEach(function (n) {
-					if ((n.wavePhase == (cell.wavePhase - 1) || n.wavePhase == (cell.wavePhase)) && result.indexOf(n) == -1 && iteration.indexOf(n) == -1) {
-						iteration.push(n);
-					}
-				});
-			});
+        var result = [];
+        result = result.concat(lastIteration);
 
-			result = result.concat(iteration);
-			lastIteration = iteration;
-		} while (!(result.filter(function (r) {
-			return r.wavePhase == 0;
+        do {
 
-		}).length > 0));
+            var iteration = [];
 
-		result.forEach(function(r, idx) {
-			if (r.wavePhase == 0) {
-				result.splice(idx, 1);
+            lastIteration.forEach(function (cell) {
+                var neighbours = util.getNeighbours(cell.i, cell.j, matrix).filter(function(n) {
+                    return !n.forbidden;
+                });
 
-				var cluster = self.getCluster(r.cluster, matrix);
-				result = result.concat(cluster);
-			}
-		});
+                neighbours.forEach(function (n) {
+                    if ((n.wavePhase == (cell.wavePhase - 1) || n.wavePhase == (cell.wavePhase)) && result.indexOf(n) == -1 && iteration.indexOf(n) == -1) {
+                        iteration.push(n);
+                    }
+                });
+            });
 
-		return result;
-	},
+            result = result.concat(iteration);
+            lastIteration = iteration;
+        } while (!(result.filter(function (r) {
+            return r.wavePhase == 0;
 
-	rowWaved: function (side, matrix) {
-		var row = this.getRowIndexBySide(side, matrix);
+        }).length > 0));
 
-		for (var j = 0; j < matrix.length; j++) {
-			if (matrix[row][j].hasOwnProperty('wavePhase')) {
-				return true;
-			}
-		}
+        result.forEach(function (r, idx) {
+            if (r.wavePhase == 0) {
+                result.splice(idx, 1);
 
-		return false;
-	},
+                var cluster = self.getCluster(r.cluster, matrix);
+                result = result.concat(cluster);
+            }
+        });
 
-	getCluster: function (cluster, matrix) {
-		var clusterArr = [];
+        return result.forEach(function(r) {
+            return !r.forbidden;
+        });
+    },
 
-		for (var i = 0; i < matrix.length; i++) {
-			for (var j = 0; j < matrix.length; j++) {
-				if (matrix[i][j].cluster == cluster) {
-					clusterArr.push(matrix[i][j]);
-				}
-			}
-		}
+    makePath: function (start, matrix) {
+        var self = this;
 
-		return clusterArr;
-	},
+        var current = start;
+        var path = [];
 
-	getRowIndexBySide: function (side, matrix) {
-		var row;
+        path.push(current);
 
-		if (side == 'top') {
-			row = 0;
+        do {
 
-		} else if (side == 'bottom') {
-			row = matrix.length - 1;
+            current = path[path.length - 1];
 
-		} else {
-			throw new Error('There is no such side!');
-		}
+            var neighbours = util.getNeighbours(current.i, current.j, matrix)
+                .filter(function (n) {
+                    return n.hasOwnProperty('wavePhase') && n.wavePhase <= current.wavePhase && (path.indexOf(n) == -1);
+                });
 
-		return row;
-	},
+            var desired = neighbours.filter(function (n) {
+                return n.cluster !== -1;
+            });
 
-	initRow: function (side, matrix) {
-		var row = this.getRowIndexBySide(side, matrix);
-		var initialized = [];
+            if (desired.length > 0) {
+                path.push(self.getWithMinPhaseFromArray(desired));
 
-		for (var j = 0; j < matrix.length; j++) {
+            } else {
 
-			if (matrix[row][j].cluster !== -1) {
-				var cluster = this.getCluster(matrix[row][j].cluster, matrix);
+                path.push(self.getWithMinPhaseFromArray(neighbours));
+            }
+        } while (!(path[path.length - 1].wavePhase == 0));
 
-				cluster.forEach(function (clusterCell) {
-					clusterCell.wavePhase = 0;
-				});
-				initialized = initialized.concat(cluster);
+        return path;
+    },
 
-			} else {
-				matrix[row][j].wavePhase = 0;
-				initialized.push(matrix[row][j]);
-			}
-		}
+    getPath: function (waveDownMatrix) {
+        var self = this;
 
-		return initialized;
-	}
+        var minElements = [];
+
+        var row = waveDownMatrix.length - 1;
+
+        for (var j = 0; j < waveDownMatrix.length; j++) {
+            if (waveDownMatrix[row][j].hasOwnProperty('wavePhase')) {
+                minElements.push(waveDownMatrix[row][j]);
+            }
+        }
+
+        var paths = [];
+
+        for (var i = 0; i < minElements.length; i++) {
+            paths.push(self.makePath(minElements[i], waveDownMatrix));
+        }
+
+        return self.getBestPath(paths);
+    },
+
+    getBestPath: function (paths) {
+        var self = this;
+
+        var min = self.getNumberOfRed(paths[0]), best = paths[0];
+
+        for (var i = 1; i < paths.length; i++) {
+            var red = self.getNumberOfRed(paths[i]);
+
+            if (red < min) {
+                min = red;
+                best = paths[i];
+            }
+        }
+
+        paths = paths.filter(function (path) {
+            return self.getNumberOfRed(path) == min;
+        });
+
+        var shortest = paths[0], length = paths[0].length;
+
+        for (var i = 1; i < paths.length; i++) {
+            if (paths[i].length < length) {
+                length = paths[i].length;
+                shortest = paths[i];
+            }
+        }
+
+        return shortest;
+    },
+
+    getNumberOfRed: function (path) {
+        var num = 0;
+
+        for (var i = 0; i < path.length; i++) {
+            if (path[i].cluster == -1) {
+                num++;
+            }
+        }
+
+        return num;
+    },
+
+    getWithMinPhaseFromArray: function (arr) {
+        var min = arr[0], minPhase = arr[0].wavePhase;
+
+        for (var i = 1; i < arr.length; i++) {
+            if (arr[i].wavePhase < minPhase) {
+                min = arr[i];
+                minPhase = min.wavePhase;
+            }
+        }
+
+        return min;
+    },
+
+    rowWaved: function (side, matrix) {
+        var row = this.getRowIndexBySide(side, matrix);
+
+        for (var j = 0; j < matrix.length; j++) {
+            if (matrix[row][j].hasOwnProperty('wavePhase')) {
+                return true;
+            }
+        }
+
+        return false;
+    },
+
+    getCluster: function (cluster, matrix) {
+        var clusterArr = [];
+
+        for (var i = 0; i < matrix.length; i++) {
+            for (var j = 0; j < matrix.length; j++) {
+                if (matrix[i][j].cluster == cluster) {
+                    clusterArr.push(matrix[i][j]);
+                }
+            }
+        }
+
+        return clusterArr;
+    },
+
+    getRowIndexBySide: function (side, matrix) {
+        var row;
+
+        if (side == 'top') {
+            row = 0;
+
+        } else if (side == 'bottom') {
+            row = matrix.length - 1;
+
+        } else {
+            throw new Error('There is no such side!');
+        }
+
+        return row;
+    },
+
+    initRow: function (side, matrix) {
+        var row = this.getRowIndexBySide(side, matrix);
+
+        for (var j = 0; j < matrix.length; j++) {
+
+            if (matrix[row][j].cluster !== -1) {
+                var cluster = this.getCluster(matrix[row][j].cluster, matrix);
+
+                cluster.forEach(function (clusterCell) {
+                    clusterCell.wavePhase = 0;
+                });
+
+            } else {
+                matrix[row][j].wavePhase = 0;
+            }
+        }
+    }
 };
