@@ -7,6 +7,7 @@ var clusteredMatrix;
 var iterationsArray = [];
 var globalResults = {};
 var matrices = [];
+var forbidden = [];
 
 initGlobalMatrix();
 
@@ -54,6 +55,27 @@ function createRandomMatrix(p) {
     }
 
     return matrix;
+}
+
+
+function findNew() {
+
+    var matrix = createRandomMatrix(1 - parseFloat(getElm('p').value));
+
+    var clustered = finder.findClusters(matrix);
+    var wavedUp = wave.waveUp(clustered);
+    var prepared = wave.prepare(wavedUp);
+    var wavedDown = wave.waveDown(wavedUp, prepared);
+
+    drawTable(wavedDown, 'wavePhase');
+
+    prepared.forEach(function(p) {
+        getElm(p.i + ':' + p.j).style.border = '3px solid red';
+    });
+
+    //var wavedDown = wave.waveDown(prepared);
+
+
 }
 
 function initGlobalMatrixGradient() {
@@ -183,7 +205,7 @@ function createCell(i, j, color) {
 
 function drawTable(matrix, field) {
     var N = matrix.length;
-    var size = 500;
+    var size = 800;
 
     var tdSize = size / N;
 
