@@ -25,6 +25,7 @@ function initGlobalMatrix() {
     globalMatrix = createMatrix();
 
     var p = 1 - parseFloat(getElm('p').value);
+    var cnt = 0;
 
     for (var i = 0; i < globalMatrix.length; i++) {
         for (var j = 0; j < globalMatrix.length; j++) {
@@ -32,7 +33,8 @@ function initGlobalMatrix() {
                 color: Math.random() > p ? 'black' : 'white',
                 id: i + ':' + j,
                 i: i,
-                j: j
+                j: j,
+                idx: cnt++
             }
         }
     }
@@ -57,6 +59,33 @@ function createRandomMatrix(p) {
     return matrix;
 }
 
+function setGraph() {
+    worker.postMessage({action: 'graph', matrix: util.copy(globalMatrix), from: forbidden[0].idx, to: forbidden[1].idx});
+}
+
+/*function setGraph() {
+
+    if (forbidden.length !== 2) {
+        alert('Choose from and to cells!');
+        return;
+    }
+
+    var matrix = util.copy(globalMatrix);
+    var clustered = finder.findClusters(matrix);
+    var path = graph.makeGraph(clustered, forbidden[0].idx, forbidden[1].idx);
+
+    path = path.split(' ');
+
+    for (var i = 0; i < matrix.length; i++) {
+        for (var j = 0; j < matrix.length; j++) {
+            for (var k = 0; k < path.length; k++) {
+                if (path[k] == matrix[i][j].idx) {
+                    getElm(i + ':' + j).style.border = '3px solid red';
+                }
+            }
+        }
+    }
+}*/
 
 function findNew() {
 
@@ -73,9 +102,9 @@ function findNew() {
     var end = new Date().getTime();
     console.log('Time: ' + (end - start));
 
-    drawTable(wavedDown);
+    drawTable(wavedUp, 'wavePhase');
 
-    paintMatrix('black');
+    //paintMatrix('black');
 
     path.forEach(function (p) {
         var elm = getElm(p.i + ':' + p.j);
@@ -100,6 +129,8 @@ function initGlobalMatrixGradient() {
 
     var step = (maxP - startP) / (globalMatrix.length / 2);
 
+    var cnt = 0;
+
     for (var i = 0, pos = startP; i < globalMatrix.length / 2; i++, pos += step) {
         for (var j = 0; j < globalMatrix.length; j++) {
             globalMatrix[i][j] = createCell(i, j, Math.random() > pos ? 'white' : 'black');
@@ -112,7 +143,11 @@ function initGlobalMatrixGradient() {
         }
     }
 
-
+    for (var i = 0; i < globalMatrix.length; i++) {
+        for (var j = 0; j < globalMatrix.length; j++) {
+            globalMatrix[i][j].idx = cnt++;
+        }
+    }
     drawTable(globalMatrix);
 }
 
@@ -257,6 +292,11 @@ function tdClick() {
 
     obj.i = parseInt(id.split(':')[0]);
     obj.j = parseInt(id.split(':')[1]);
+    obj.idx = globalMatrix[obj.i][obj.j].idx;
+
+    if (forbidden.length == 2) {
+        forbidden = forbidden.slice(1);
+    }
 
     forbidden.push(obj);
 }
@@ -296,11 +336,6 @@ worker.addEventListener('message', function (event) {
             break;
         }
 
-        case 'graph': {
-            onGraph(event.data.arr);
-            break;
-        }
-
         case 'info': {
             onInfo(event.data.info);
             break;
@@ -317,6 +352,11 @@ worker.addEventListener('message', function (event) {
         }
         case 'path': {
             onPath(event.data.path);
+            break;
+        }
+
+        case 'graph': {
+            onGraph(event.data.path, event.data.matrix);
             break;
         }
     }
@@ -534,9 +574,16 @@ function onFindPath(matrix) {
     drawTable(matrix, 'wavePhase');
 }
 
-function onGraph(arr) {
-    arr.forEach(function (el) {
-        var td = getElm(el.i + ':' + el.j);
-        td.style.border = '5px solid red';
-    })
+function onGraph(path, matrix) {
+    path = path.split(' ');
+
+    for (var i = 0; i < matrix.length; i++) {
+        for (var j = 0; j < matrix.length; j++) {
+            for (var k = 0; k < path.length; k++) {
+                if (path[k] == globalMatrix[i][j].idx) {
+                    getElm(i + ':' + j).style.border = '3px solid red';
+                }
+            }
+        }
+    }
 }

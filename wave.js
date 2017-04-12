@@ -154,9 +154,11 @@ var wave = {
             }
         });
 
-        return result.forEach(function(r) {
+        result = result.filter(function(r) {
             return !r.forbidden;
         });
+
+        return result;
     },
 
     makePath: function (start, matrix) {

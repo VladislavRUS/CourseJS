@@ -1,3 +1,7 @@
+importScripts('util.js');
+importScripts('graph.js');
+importScripts('findCluster.js');
+
 onmessage = function (event) {
     var action = event.data.action;
 
@@ -26,6 +30,18 @@ onmessage = function (event) {
                 matrix: matrixWithClusters,
                 i: event.data.i
             });
+
+            break;
+        }
+
+        case 'graph': {
+            var matrix = event.data.matrix;
+            var from = event.data.from;
+            var to = event.data.to;
+
+            var clustered = finder.findClusters(matrix);
+
+            postMessage({action: 'graph', path: graph.makeGraph(clustered, from, to), matrix: clustered});
         }
     }
 };
