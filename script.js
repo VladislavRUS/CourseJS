@@ -8,6 +8,7 @@ var iterationsArray = [];
 var globalResults = {};
 var matrices = [];
 var forbidden = [];
+var route = [];
 
 initGlobalMatrix();
 
@@ -60,32 +61,38 @@ function createRandomMatrix(p) {
 }
 
 function setGraph() {
-    worker.postMessage({action: 'graph', matrix: util.copy(globalMatrix), from: forbidden[0].idx, to: forbidden[1].idx});
+    worker.postMessage({
+        action: 'graph',
+        matrix: util.copy(globalMatrix),
+        from: route[0].idx,
+        to: route[1].idx,
+        forbidden: forbidden
+    });
 }
 
 /*function setGraph() {
 
-    if (forbidden.length !== 2) {
-        alert('Choose from and to cells!');
-        return;
-    }
+ if (forbidden.length !== 2) {
+ alert('Choose from and to cells!');
+ return;
+ }
 
-    var matrix = util.copy(globalMatrix);
-    var clustered = finder.findClusters(matrix);
-    var path = graph.makeGraph(clustered, forbidden[0].idx, forbidden[1].idx);
+ var matrix = util.copy(globalMatrix);
+ var clustered = finder.findClusters(matrix);
+ var path = graph.makeGraph(clustered, forbidden[0].idx, forbidden[1].idx);
 
-    path = path.split(' ');
+ path = path.split(' ');
 
-    for (var i = 0; i < matrix.length; i++) {
-        for (var j = 0; j < matrix.length; j++) {
-            for (var k = 0; k < path.length; k++) {
-                if (path[k] == matrix[i][j].idx) {
-                    getElm(i + ':' + j).style.border = '3px solid red';
-                }
-            }
-        }
-    }
-}*/
+ for (var i = 0; i < matrix.length; i++) {
+ for (var j = 0; j < matrix.length; j++) {
+ for (var k = 0; k < path.length; k++) {
+ if (path[k] == matrix[i][j].idx) {
+ getElm(i + ':' + j).style.border = '3px solid red';
+ }
+ }
+ }
+ }
+ }*/
 
 function findNew() {
 
@@ -129,8 +136,6 @@ function initGlobalMatrixGradient() {
 
     var step = (maxP - startP) / (globalMatrix.length / 2);
 
-    var cnt = 0;
-
     for (var i = 0, pos = startP; i < globalMatrix.length / 2; i++, pos += step) {
         for (var j = 0; j < globalMatrix.length; j++) {
             globalMatrix[i][j] = createCell(i, j, Math.random() > pos ? 'white' : 'black');
@@ -143,12 +148,16 @@ function initGlobalMatrixGradient() {
         }
     }
 
+    drawTable(globalMatrix);
+}
+
+function setIndeces() {
+    var cnt = 0;
     for (var i = 0; i < globalMatrix.length; i++) {
         for (var j = 0; j < globalMatrix.length; j++) {
             globalMatrix[i][j].idx = cnt++;
         }
     }
-    drawTable(globalMatrix);
 }
 
 function resetMatrix() {
@@ -251,6 +260,8 @@ function createCell(i, j, color) {
 }
 
 function drawTable(matrix, field) {
+    setIndeces();
+
     forbidden = [];
 
     var N = matrix.length;
@@ -285,8 +296,8 @@ function drawTable(matrix, field) {
     }
 }
 
-function tdClick() {
-    this.style.backgroundColor = 'green';
+function tdClick(e) {
+
     var obj = {};
     var id = this.getAttribute('id');
 
@@ -294,11 +305,25 @@ function tdClick() {
     obj.j = parseInt(id.split(':')[1]);
     obj.idx = globalMatrix[obj.i][obj.j].idx;
 
-    if (forbidden.length == 2) {
-        forbidden = forbidden.slice(1);
-    }
+    if (!e.ctrlKey) {
 
-    forbidden.push(obj);
+        if (route.length == 2) {
+            route = route.slice(1);
+        }
+
+        route.push(obj);
+
+        route.forEach(function(r) {
+            getElm(r.i + ':' + r.j).style.backgroundColor = 'green';
+        });
+
+    } else {
+        forbidden.push(obj);
+
+        forbidden.forEach(function(f) {
+            getElm(f.i + ':' + f.j).style.backgroundColor = 'cyan';
+        });
+    }
 }
 
 function getElm(id) {
@@ -581,7 +606,15 @@ function onGraph(path, matrix) {
         for (var j = 0; j < matrix.length; j++) {
             for (var k = 0; k < path.length; k++) {
                 if (path[k] == globalMatrix[i][j].idx) {
-                    getElm(i + ':' + j).style.border = '3px solid red';
+                    var elm = getElm(i + ':' + j);
+
+                    if (elm.style.border == '3px solid red') {
+                        elm.style.border = '3px solid orange';
+
+                    } else {
+                        elm.style.border = '3px solid red'
+                    }
+
                 }
             }
         }

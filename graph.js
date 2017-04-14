@@ -1,5 +1,5 @@
 var graph = {
-    makeGraph: function (matrix, from, to) {
+    makeGraph: function (matrix, from, to, forbidden) {
         var self = this;
 
         var start = new Date().getTime();
@@ -38,6 +38,12 @@ var graph = {
                 });
             }
         }
+
+        forbidden.forEach(function (f) {
+            for (var i = 0; i < graph[f.idx].length; i++) {
+                self.setMatrixValue(f.idx, i, Number.MAX_VALUE, graph);
+            }
+        });
 
         var end = new Date().getTime();
 
